@@ -6,15 +6,15 @@ __declspec(dllexport) lame_global_flags* __stdcall lameCoder_createFlag();
 
 __declspec(dllexport) void __stdcall lameCoder_initializeFlag(lame_global_flags* glf);
 
-__declspec(dllexport) void __stdcall lameCoder_close(lame_global_flags* glf);
+__declspec(dllexport) void __stdcall lameCoder_closeFlag(lame_global_flags* glf);
 
-__declspec(dllexport) int __stdcall lameCoder_encode(lame_global_flags* glf, char* source, int sourceSize, char** destination, int* destinationSize);
+__declspec(dllexport) int __stdcall lameCoder_encodeToMp3(lame_global_flags* glf, char* source, int sourceSize, char** destination, int* destinationSize);
 
-__declspec(dllexport) void __stdcall lameCoder_initDecoder();
+__declspec(dllexport) void __stdcall lameCoder_initializeDecoder();
 
 __declspec(dllexport) void __stdcall lameCoder_closeDecoder();
 
-__declspec(dllexport) int __stdcall lameCoder_decode(lame_global_flags* glf, char* source, int sourceSize, mp3data_struct* metadata, char** destination, int* destinationSize);
+__declspec(dllexport) int __stdcall lameCoder_decodeToPcm(lame_global_flags* glf, char* source, int sourceSize, mp3data_struct* metadata, char** destination, int* destinationSize);
 
 __declspec(dllexport) void __stdcall lameCoder_setInputSamplerate(lame_global_flags* glf, int inputSamplerate);
 

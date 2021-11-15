@@ -22,12 +22,12 @@ __declspec(dllexport) void __stdcall lameCoder_initializeFlag(lame_global_flags*
     lame_init_params(glf);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_close(lame_global_flags* glf)
+__declspec(dllexport) void __stdcall lameCoder_closeFlag(lame_global_flags* glf)
 {
     lame_close(glf);
 }
 
-__declspec(dllexport) int __stdcall lameCoder_encode(lame_global_flags* glf, char* source, int sourceSize, char** destination, int* destinationSize)
+__declspec(dllexport) int __stdcall lameCoder_encodeToMp3(lame_global_flags* glf, char* source, int sourceSize, char** destination, int* destinationSize)
 {
     const int sampleLimit = 1024;
     const int readLimit = sampleLimit * 2;
@@ -106,7 +106,7 @@ __declspec(dllexport) int __stdcall lameCoder_encode(lame_global_flags* glf, cha
     return ret;
 }
 
-__declspec(dllexport) void __stdcall lameCoder_initDecoder()
+__declspec(dllexport) void __stdcall lameCoder_initializeDecoder()
 {
     hip = hip_decode_init();
 }
@@ -116,7 +116,7 @@ __declspec(dllexport) void __stdcall lameCoder_closeDecoder()
     hip_decode_exit(hip);
 }
 
-__declspec(dllexport) int __stdcall lameCoder_decode(lame_global_flags* glf, char* source, int sourceSize, mp3data_struct* metadata, char** destination, int* destinationSize)
+__declspec(dllexport) int __stdcall lameCoder_decodeToPcm(lame_global_flags* glf, char* source, int sourceSize, mp3data_struct* metadata, char** destination, int* destinationSize)
 {
     unsigned char input[1024];
     short* output_l;
