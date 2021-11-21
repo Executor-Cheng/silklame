@@ -31,17 +31,20 @@ DLLEXPORT int STDCALL lameCoder_encodeToMp3(lame_global_flags* glf, char* source
 {
     const int sampleLimit = 1024;
     const int readLimit = sampleLimit * 2;
+    const int encodeBufferSize = sampleLimit * 5 / 4 + 7200;
     unsigned char* encodeBuffer;
-    const int encodeBufferSize = readLimit + readLimit * 5 / 4 + 7200;
-    char* buffer = NULL;
-    int bufferSize = 0;
-    char* reallocBuffer;
     int nb_read;
     int nb_write;
     int ret = 0;
+    coding_buffer buffer;
 
     encodeBuffer = (unsigned char*)malloc(encodeBufferSize);
     if (!encodeBuffer)
+    {
+        ret = 1;
+        goto fail;
+    }
+    if (coding_buffer_initialize(&buffer, 512 * 1024))
     {
         ret = 1;
         goto fail;
@@ -50,7 +53,7 @@ DLLEXPORT int STDCALL lameCoder_encodeToMp3(lame_global_flags* glf, char* source
     {
         nb_read = readLimit ^ ((sourceSize ^ readLimit) & -(sourceSize < readLimit));
         sourceSize -= nb_read;
-        nb_write = lame_encode_buffer(glf, source, source, sampleLimit, encodeBuffer, encodeBufferSize);
+        nb_write = lame_encode_buffer(glf, (short*)source, (short*)source, sampleLimit, encodeBuffer, 0);
         source += nb_read;
         if (nb_write == 0)
         {
@@ -61,48 +64,32 @@ DLLEXPORT int STDCALL lameCoder_encodeToMp3(lame_global_flags* glf, char* source
             ret = -nb_write - (nb_write == -2);
             goto fail;
         }
-        reallocBuffer = (char*)realloc(buffer, bufferSize + nb_write);
-        if (!reallocBuffer)
+        if (coding_buffer_append(&buffer, encodeBuffer, nb_write))
         {
             ret = 1;
             goto fail;
         }
-        buffer = reallocBuffer;
-        memcpy(buffer + bufferSize, encodeBuffer, nb_write);
-        bufferSize += nb_write;
     }
 
     nb_write = lame_encode_flush(glf, encodeBuffer, encodeBufferSize);
-    if (nb_write)
+    if (nb_write && coding_buffer_append(&buffer, encodeBuffer, nb_write))
     {
-        reallocBuffer = (char*)realloc(buffer, bufferSize + nb_write);
-        if (!reallocBuffer)
-        {
-            ret = 1;
-            goto fail;
-        }
-        buffer = reallocBuffer;
-        memcpy(buffer + bufferSize, encodeBuffer, nb_write);
-        bufferSize += nb_write;
+        ret = 1;
+        goto fail;
     }
     
     if (0)
     {
         fail:
-        if (buffer)
-        {
-            free(buffer);
-            buffer = NULL;
-        }
-        bufferSize = 0;
+        coding_buffer_free(&buffer);
     }
     if (encodeBuffer)
     {
         free(encodeBuffer);
     }
 
-    *destination = buffer;
-    *destinationSize = bufferSize;
+    *destination = buffer.ptr;
+    *destinationSize = buffer.length;
     return ret;
 }
 
@@ -123,11 +110,16 @@ DLLEXPORT int STDCALL lameCoder_decodeToPcm(lame_global_flags* glf, char* source
     short* output_r;
     size_t nb_read = 0;
     size_t nb_write = 0;
-    char* buffer = NULL, *reallocBuffer;
-    int bufferSize = 0, ret = 0;
+    coding_buffer buffer;
+    int ret = 0;
     output_l = (short*)malloc(1152 * 16);
     output_r = (short*)malloc(1152 * 16);
     if (!output_l || !output_r)
+    {
+        ret = 1;
+        goto fail;
+    }
+    if (coding_buffer_initialize(&buffer, 512 * 1024))
     {
         ret = 1;
         goto fail;
@@ -149,38 +141,22 @@ DLLEXPORT int STDCALL lameCoder_decodeToPcm(lame_global_flags* glf, char* source
             continue;
         }
         nb_write *= sizeof(short);
-        reallocBuffer = (char*)realloc(buffer, bufferSize + nb_write);
-        if (!reallocBuffer)
+        if (coding_buffer_append(&buffer, output_l, nb_write))
         {
             ret = 1;
             goto fail;
         }
-        buffer = reallocBuffer;
-        memcpy(buffer + bufferSize, output_l, nb_write);
-        bufferSize += nb_write;
     }
     nb_write = lame_encode_flush(glf, output_l, 8192);
-    if (nb_write)
+    if (nb_write && coding_buffer_append(&buffer, output_l, nb_write))
     {
-        reallocBuffer = (char*)realloc(buffer, bufferSize + nb_write);
-        if (!reallocBuffer)
-        {
-            ret = 1;
-            goto fail;
-        }
-        buffer = reallocBuffer;
-        memcpy(buffer + bufferSize, output_l, nb_write);
-        bufferSize += nb_write;
+        ret = 1;
+        goto fail;
     }
     if (0)
     {
         fail:
-        if (buffer)
-        {
-            free(buffer);
-            buffer = NULL;
-        }
-        bufferSize = 0;
+        coding_buffer_free(&buffer);
     }
     if (output_l)
     {
@@ -191,8 +167,8 @@ DLLEXPORT int STDCALL lameCoder_decodeToPcm(lame_global_flags* glf, char* source
         free(output_r);
     }
 
-    *destination = buffer;
-    *destinationSize = bufferSize;
+    *destination = buffer.ptr;
+    *destinationSize = buffer.length;
     return ret;
 }
 

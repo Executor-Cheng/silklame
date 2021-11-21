@@ -12,7 +12,6 @@ static SKP_int32 rand_seed = 1;
 DLLEXPORT int STDCALL silkCoder_encodeToSilk(char* source, int sourceSize, unsigned int tencent, int sourceRate, int maxInternalSampleRate, int packetSize, int packetLossPercentage, int useInBandFEC, int useDTX, int complexity, int bitRate, char** destination, int* destinationSize)
 {
     int counter;
-    char* reallocPtr;
     short nBytes;
     unsigned char payload[MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES];
     short in[FRAME_LENGTH_MS * MAX_API_FS_KHZ * MAX_INPUT_FRAMES];
@@ -23,17 +22,16 @@ DLLEXPORT int STDCALL silkCoder_encodeToSilk(char* source, int sourceSize, unsig
     SKP_SILK_SDK_EncControlStruct encControl;
     SKP_SILK_SDK_EncControlStruct encStatus;
     int32_t ret = 0;
-    char* buffer = NULL;
-    int bufferSize;
+    coding_buffer buffer;
+
+    if (coding_buffer_initialize(&buffer, 32 * 1024))
+    {
+        ret = 1;
+        goto fail;
+    }
     if (sourceRate > MAX_API_FS_KHZ * 1000 || sourceRate < 0)
     {
         ret = 2;
-        goto fail;
-    }
-    buffer = malloc(10);
-    if (!buffer) 
-    {
-        ret = 1;
         goto fail;
     }
     SKP_Silk_SDK_Get_Encoder_Size(&encSizeBytes);
@@ -43,7 +41,7 @@ DLLEXPORT int STDCALL silkCoder_encodeToSilk(char* source, int sourceSize, unsig
         ret = 1;
         goto fail;
     }
-    memcpy(buffer, (!tencent) + "#!SILK_V3", bufferSize = 9 + tencent);
+    coding_buffer_ensuredappend(&buffer, (!tencent) + "#!SILK_V3", 9 + tencent);
     SKP_Silk_SDK_InitEncoder(psEnc, &encStatus);
     encControl.API_sampleRate = sourceRate;
     encControl.maxInternalSampleRate = maxInternalSampleRate;
@@ -74,49 +72,41 @@ DLLEXPORT int STDCALL silkCoder_encodeToSilk(char* source, int sourceSize, unsig
         samplesSinceLastPacket += counter;
         if (((1000 * samplesSinceLastPacket) / sourceRate) == expectedPacketSize)
         {
-            reallocPtr = (char*)realloc(buffer, (unsigned long long)bufferSize + (unsigned short)nBytes + sizeof(short) + (unsigned long long)((unsigned int)!tencent) * 2);
-            if (!reallocPtr) {
+            if (coding_buffer_ensure_capacity(&buffer, buffer.length + nBytes + (!tencent) * 2, 2))
+            {
                 ret = 1;
                 goto fail;
             }
-            buffer = reallocPtr;
-            reallocPtr = buffer + bufferSize;
 #ifdef _SYSTEM_IS_BIG_ENDIAN
-            *(short*)reallocPtr = swap_short_endian(nBytes);
+            *(short*)((char*)buffer.ptr + buffer.length) = swap_short_endian(nBytes);
 #else
-            *(short*)reallocPtr = nBytes;
+            *(short*)((char*)buffer.ptr + buffer.length) = nBytes;
 #endif
-            memcpy(reallocPtr + sizeof(short), payload, nBytes);
-            bufferSize += nBytes + sizeof(short);
-
+            buffer.length += sizeof(short);
+            coding_buffer_ensuredappend(&buffer, payload, nBytes);
             samplesSinceLastPacket = 0;
         }
     }
     if (!tencent)
     {
 #ifdef _SYSTEM_IS_BIG_ENDIAN
-        * (short*)(buffer + bufferSize) = swap_short_endian(nBytes);
+        *(short*)((char*)buffer.ptr + buffer.length) = swap_short_endian(nBytes);
 #else
-        * (short*)(buffer + bufferSize) = nBytes;
+        *(short*)((char*)buffer.ptr + buffer.length) = nBytes;
 #endif
-        bufferSize += sizeof(short);
+        buffer.length += sizeof(short);
     }
     if (0)
     {
         fail:
-        if (buffer)
-        {
-            free(buffer);
-            buffer = NULL;
-        }
-        bufferSize = 0;
+        coding_buffer_free(&buffer);
     }
     if (psEnc)
     {
         free(psEnc);
     }
-    *destination = buffer;
-    *destinationSize = bufferSize;
+    *destination = buffer.ptr;
+    *destinationSize = buffer.length;
     return ret;
 }
 
@@ -140,8 +130,9 @@ DLLEXPORT int STDCALL silkCoder_decodeToPcm(char* source, int sourceSize, int fs
     int lost;
     SKP_SILK_SDK_DecControlStruct decControl;
     int ret = 0;
-    char* buffer = NULL;
-    int bufferSize = 0;
+    coding_buffer buffer;
+    buffer.ptr = NULL;
+
     if ((sourceSize -= 9) < 0)
     {
         ret = 2;
@@ -160,6 +151,12 @@ DLLEXPORT int STDCALL silkCoder_decodeToPcm(char* source, int sourceSize, int fs
         ret = 2;
         goto fail;
     }
+    if (coding_buffer_initialize(&buffer, 512 * 1024))
+    {
+        ret = 1;
+        goto fail;
+    }
+
     decControl.API_sampleRate = fs_hz + (24000 & -(fs_hz == 0));
     decControl.framesPerPacket = 1;
     SKP_Silk_SDK_Get_Decoder_Size(&decSizeBytes);
@@ -239,22 +236,17 @@ DLLEXPORT int STDCALL silkCoder_decodeToPcm(char* source, int sourceSize, int fs
             nBytesPerPacket[MAX_LBRR_DELAY] = 0;
         }
         lost = DetermineLost(&nBytesPerPacket, payload, &fecPayload, &nBytes, &payloadToDecode);
-        ret = InternalDecode(lost, psDec, &decControl, &nBytesPerPacket, out, payloadToDecode, payload, &payloadPtr, nBytes, &buffer, &bufferSize);
+        ret = InternalDecode(lost, psDec, &decControl, &nBytesPerPacket, out, payloadToDecode, payload, &payloadPtr, nBytes, &buffer);
     }
     for (i = 0; i < MAX_LBRR_DELAY; i++)
     {
         lost = DetermineLost(&nBytesPerPacket, payload, &fecPayload, &nBytes, &payloadToDecode);
-        ret = InternalDecode(lost, psDec, &decControl, &nBytesPerPacket, out, payloadToDecode, payload, &payloadPtr, nBytes, &buffer, &bufferSize);
+        ret = InternalDecode(lost, psDec, &decControl, &nBytesPerPacket, out, payloadToDecode, payload, &payloadPtr, nBytes, &buffer);
     }
     if (0)
     {
     fail:
-        if (buffer)
-        {
-            free(buffer);
-            buffer = NULL;
-        }
-        bufferSize = 0;
+        coding_buffer_free(&buffer);
     }
     if (psDec)
     {
@@ -268,8 +260,8 @@ DLLEXPORT int STDCALL silkCoder_decodeToPcm(char* source, int sourceSize, int fs
     {
         free(out);
     }
-    *destination = buffer;
-    *destinationSize = bufferSize;
+    *destination = buffer.ptr;
+    *destinationSize = buffer.length;
     return ret;
 }
 
@@ -300,7 +292,7 @@ static int DetermineLost(const short* nBytesPerPacket, char* payload, unsigned c
 }
 
 static int InternalDecode(int lost, void* psDec, SKP_SILK_SDK_DecControlStruct* decControl, const short* nBytesPerPacket,
-    short* out, char* payloadToDec, char* payload, char** payloadEnd, short nBytes, char** output, int* outputSize)
+    short* out, char* payloadToDec, char* payload, char** payloadEnd, short nBytes, coding_buffer* buffer)
 {
     const int payloadSize = MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES * (MAX_LBRR_DELAY + 1);
     /* Silk decoder */
@@ -308,7 +300,6 @@ static int InternalDecode(int lost, void* psDec, SKP_SILK_SDK_DecControlStruct* 
     int totalLength = 0, totalBytes;
     int i, frames;
     char* outptr = out;
-    char* reallocPtr;
     if (!lost)
     {
         /* No Loss: Decode all frames in the packet */
@@ -351,14 +342,10 @@ static int InternalDecode(int lost, void* psDec, SKP_SILK_SDK_DecControlStruct* 
     swap_endian(out, totalLength);
 #endif
     totalLength *= sizeof(short);
-    reallocPtr = (char*)realloc(*output, *outputSize + totalLength);
-    if (!reallocPtr)
+    if (coding_buffer_append(buffer, out, totalLength))
     {
         return 1;
     }
-    *output = reallocPtr;
-    memcpy(*output + *outputSize, out, totalLength);
-    *outputSize += totalLength;
 
     /* Update buffer */
     totalBytes = 0;

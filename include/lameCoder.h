@@ -1,5 +1,6 @@
 #include "lame.h"
 #include "dllexport.h"
+#include "codingBuffer.h"
 
 DLLEXPORT lame_global_flags* STDCALL lameCoder_initializeDefaultFlag();
 

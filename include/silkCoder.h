@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "endian.h"
+#include "codingBuffer.h"
 #include "dllexport.h"
 #include "SKP_Silk_SDK_API.h"
 #include "SKP_Silk_SigProc_FIX.h"
@@ -12,4 +13,4 @@ DLLEXPORT int STDCALL silkCoder_decodeToPcm(char* source, int sourceSize, int fs
 
 static int DetermineLost(const short* nBytesPerPacket, char* payload, unsigned char* FECpayload, short* nBytes, char** payloadToDec);
 
-static int InternalDecode(int lost, void* psDec, SKP_SILK_SDK_DecControlStruct* decControl, const short* nBytesPerPacket, short* out, char* payloadToDec, char* payload, char** payloadEnd, short nBytes, char** output, int* outputSize);
+static int InternalDecode(int lost, void* psDec, SKP_SILK_SDK_DecControlStruct* decControl, const short* nBytesPerPacket, short* out, char* payloadToDec, char* payload, char** payloadEnd, short nBytes, coding_buffer* buffer);
