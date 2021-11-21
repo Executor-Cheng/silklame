@@ -9,7 +9,7 @@ static SKP_int32 rand_seed = 1;
 1: Out of memory
 2: Invalid argument
 */
-__declspec(dllexport) int __stdcall silkCoder_encodeToSilk(char* source, int sourceSize, unsigned int tencent, int sourceRate, int maxInternalSampleRate, int packetSize, int packetLossPercentage, int useInBandFEC, int useDTX, int complexity, int bitRate, char** destination, int* destinationSize)
+DLLEXPORT int STDCALL silkCoder_encodeToSilk(char* source, int sourceSize, unsigned int tencent, int sourceRate, int maxInternalSampleRate, int packetSize, int packetLossPercentage, int useInBandFEC, int useDTX, int complexity, int bitRate, char** destination, int* destinationSize)
 {
     int counter;
     char* reallocPtr;
@@ -125,7 +125,7 @@ __declspec(dllexport) int __stdcall silkCoder_encodeToSilk(char* source, int sou
 1: Out of memory
 2: Invalid data
 */
-__declspec(dllexport) int __stdcall silkCoder_decodeToPcm(char* source, int sourceSize, int fs_hz, float loss, char** destination, int* destinationSize)
+DLLEXPORT int STDCALL silkCoder_decodeToPcm(char* source, int sourceSize, int fs_hz, float loss, char** destination, int* destinationSize)
 {
     const int payloadSize = MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES * (MAX_LBRR_DELAY + 1);
     const int outSize = sizeof(SKP_int16) * ((FRAME_LENGTH_MS * MAX_API_FS_KHZ) << 1) * MAX_INPUT_FRAMES;

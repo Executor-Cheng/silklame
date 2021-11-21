@@ -4,30 +4,30 @@
 
 hip_t hip;
 
-__declspec(dllexport) lame_global_flags* __stdcall lameCoder_initializeDefaultFlag()
+DLLEXPORT lame_global_flags* STDCALL lameCoder_initializeDefaultFlag()
 {
     lame_global_flags* glf = lame_init();
     lame_init_params(glf);
     return glf;
 }
 
-__declspec(dllexport) lame_global_flags* __stdcall lameCoder_createFlag()
+DLLEXPORT lame_global_flags* STDCALL lameCoder_createFlag()
 {
     lame_global_flags* glf = lame_init();
     return glf;
 }
 
-__declspec(dllexport) void __stdcall lameCoder_initializeFlag(lame_global_flags* glf)
+DLLEXPORT void STDCALL lameCoder_initializeFlag(lame_global_flags* glf)
 {
     lame_init_params(glf);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_closeFlag(lame_global_flags* glf)
+DLLEXPORT void STDCALL lameCoder_closeFlag(lame_global_flags* glf)
 {
     lame_close(glf);
 }
 
-__declspec(dllexport) int __stdcall lameCoder_encodeToMp3(lame_global_flags* glf, char* source, int sourceSize, char** destination, int* destinationSize)
+DLLEXPORT int STDCALL lameCoder_encodeToMp3(lame_global_flags* glf, char* source, int sourceSize, char** destination, int* destinationSize)
 {
     const int sampleLimit = 1024;
     const int readLimit = sampleLimit * 2;
@@ -106,17 +106,17 @@ __declspec(dllexport) int __stdcall lameCoder_encodeToMp3(lame_global_flags* glf
     return ret;
 }
 
-__declspec(dllexport) void __stdcall lameCoder_initializeDecoder()
+DLLEXPORT void STDCALL lameCoder_initializeDecoder()
 {
     hip = hip_decode_init();
 }
 
-__declspec(dllexport) void __stdcall lameCoder_closeDecoder()
+DLLEXPORT void STDCALL lameCoder_closeDecoder()
 {
     hip_decode_exit(hip);
 }
 
-__declspec(dllexport) int __stdcall lameCoder_decodeToPcm(lame_global_flags* glf, char* source, int sourceSize, mp3data_struct* metadata, char** destination, int* destinationSize)
+DLLEXPORT int STDCALL lameCoder_decodeToPcm(lame_global_flags* glf, char* source, int sourceSize, mp3data_struct* metadata, char** destination, int* destinationSize)
 {
     unsigned char input[1024];
     short* output_l;
@@ -196,32 +196,32 @@ __declspec(dllexport) int __stdcall lameCoder_decodeToPcm(lame_global_flags* glf
     return ret;
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setInputSamplerate(lame_global_flags* glf, int inputSamplerate)
+DLLEXPORT void STDCALL lameCoder_setInputSamplerate(lame_global_flags* glf, int inputSamplerate)
 {
     lame_set_in_samplerate(glf, inputSamplerate);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setInputChannelNum(lame_global_flags* glf, int inputChannels)
+DLLEXPORT void STDCALL lameCoder_setInputChannelNum(lame_global_flags* glf, int inputChannels)
 {
     lame_set_num_channels(glf, inputChannels);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setOutputSamplerate(lame_global_flags* glf, int outputSamplerate)
+DLLEXPORT void STDCALL lameCoder_setOutputSamplerate(lame_global_flags* glf, int outputSamplerate)
 {
     lame_set_out_samplerate(glf, outputSamplerate);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setOutputBitrate(lame_global_flags* glf, int outputBitrate)
+DLLEXPORT void STDCALL lameCoder_setOutputBitrate(lame_global_flags* glf, int outputBitrate)
 {
     lame_set_brate(glf, outputBitrate);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setInputScale(lame_global_flags* glf, float scale)
+DLLEXPORT void STDCALL lameCoder_setInputScale(lame_global_flags* glf, float scale)
 {
     lame_set_scale(glf, scale);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setOutputChannelMode(lame_global_flags* glf, int outputChannelMode)
+DLLEXPORT void STDCALL lameCoder_setOutputChannelMode(lame_global_flags* glf, int outputChannelMode)
 {
     switch (outputChannelMode)
     {
@@ -240,7 +240,7 @@ __declspec(dllexport) void __stdcall lameCoder_setOutputChannelMode(lame_global_
     }
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setVbrMode(lame_global_flags* glf, int mode)
+DLLEXPORT void STDCALL lameCoder_setVbrMode(lame_global_flags* glf, int mode)
 {
     switch (mode)
     {
@@ -262,32 +262,32 @@ __declspec(dllexport) void __stdcall lameCoder_setVbrMode(lame_global_flags* glf
     }
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setQuality(lame_global_flags* glf, int quality)
+DLLEXPORT void STDCALL lameCoder_setQuality(lame_global_flags* glf, int quality)
 {
     lame_set_quality(glf, quality);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setVbrQuality(lame_global_flags* glf, int quality)
+DLLEXPORT void STDCALL lameCoder_setVbrQuality(lame_global_flags* glf, int quality)
 {
     lame_set_VBR_q(glf, quality);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setVbrBitrate(lame_global_flags* glf, int abrBitrateInKbps)
+DLLEXPORT void STDCALL lameCoder_setVbrBitrate(lame_global_flags* glf, int abrBitrateInKbps)
 {
     lame_set_VBR_mean_bitrate_kbps(glf, abrBitrateInKbps);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setLowpassFrequency(lame_global_flags* glf, int frequency)
+DLLEXPORT void STDCALL lameCoder_setLowpassFrequency(lame_global_flags* glf, int frequency)
 {
     lame_set_lowpassfreq(glf, frequency);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setHighpassFrequency(lame_global_flags* glf, int frequency)
+DLLEXPORT void STDCALL lameCoder_setHighpassFrequency(lame_global_flags* glf, int frequency)
 {
     lame_set_highpassfreq(glf, frequency);
 }
 
-__declspec(dllexport) void __stdcall lameCoder_setTags(lame_global_flags* glf, const char* titleTag, const char* artistTag, const char* albumTag, const char* yearTag, const char* commentTag)
+DLLEXPORT void STDCALL lameCoder_setTags(lame_global_flags* glf, const char* titleTag, const char* artistTag, const char* albumTag, const char* yearTag, const char* commentTag)
 {
     id3tag_init(glf);
     if (titleTag)

@@ -2,12 +2,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include "endian.h"
+#include "dllexport.h"
 #include "SKP_Silk_SDK_API.h"
 #include "SKP_Silk_SigProc_FIX.h"
 
-__declspec(dllexport) int __stdcall silkCoder_encodeToSilk(char* source, int sourceSize, unsigned int tencent, int fs_Hz, int maxInternalSampleRate, int packetSize, int packetLossPercentage, int useInBandFEC, int useDTX, int complexity, int bitRate, char** destination, int* destinationSize);
+DLLEXPORT int STDCALL silkCoder_encodeToSilk(char* source, int sourceSize, unsigned int tencent, int fs_Hz, int maxInternalSampleRate, int packetSize, int packetLossPercentage, int useInBandFEC, int useDTX, int complexity, int bitRate, char** destination, int* destinationSize);
 
-__declspec(dllexport) int __stdcall silkCoder_decodeToPcm(char* source, int sourceSize, int fs_hz, float loss, char** destination, int* destinationSize);
+DLLEXPORT int STDCALL silkCoder_decodeToPcm(char* source, int sourceSize, int fs_hz, float loss, char** destination, int* destinationSize);
 
 static int DetermineLost(const short* nBytesPerPacket, char* payload, unsigned char* FECpayload, short* nBytes, char** payloadToDec);
 
